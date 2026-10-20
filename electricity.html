@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f2f5f2">
+    <title>Électricité & CO₂ | Comparateur</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #1d302f;
+            --muted: #647572;
+            --line: #dce5df;
+            --paper: #f2f5f2;
+            --white: #fff;
+            --green: #176e5a;
+            --green-soft: #e6f2ec;
+            --coral: #bd553d;
+            --coral-soft: #fbede8;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 64px;
+            padding: 0 6vw;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .72);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 28px;
+            height: 28px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--green);
+            color: white;
+            font-size: 16px;
+        }
+
+        .source-label {
+            color: var(--muted);
+            font-size: 12px;
+            letter-spacing: .04em;
+        }
+
+        main {
+            width: min(960px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 64px 0 72px;
+            animation: arrive .45s ease-out both;
+        }
+
+        .eyebrow {
+            margin: 0 0 14px;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 750;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 700px;
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(36px, 5vw, 58px);
+            font-weight: 500;
+            line-height: 1.05;
+        }
+
+        .intro {
+            max-width: 620px;
+            margin: 18px 0 34px;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: minmax(150px, 1fr) minmax(180px, 1fr) minmax(190px, 1.15fr) auto;
+            align-items: end;
+            gap: 14px;
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--white);
+            box-shadow: 0 12px 35px rgba(27, 54, 44, .045);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            color: #405451;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        input, select, button {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid #cbd8d0;
+            border-radius: 6px;
+            background: white;
+            color: var(--ink);
+            font: inherit;
+        }
+
+        input, select { padding: 0 12px; }
+        input:focus, select:focus, button:focus-visible { outline: 3px solid #a9d7c3; outline-offset: 2px; }
+
+        .amount-wrap { position: relative; }
+        .amount-wrap input { padding-right: 42px; }
+        .unit {
+            position: absolute;
+            top: 14px;
+            right: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        button {
+            width: auto;
+            padding: 0 18px;
+            border-color: var(--green);
+            background: var(--green);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            transition: background .15s ease, transform .15s ease;
+        }
+
+        button:hover { transform: translateY(-1px); background: #105846; }
+        button:disabled { cursor: wait; opacity: .7; transform: none; }
+
+        .token-note {
+            margin: 10px 2px 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .token-note a { color: var(--green); }
+
+        #status {
+            min-height: 24px;
+            margin: 24px 0 12px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        #status.error { color: #a43e2d; }
+
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .result {
+            min-width: 0;
+            padding: 22px 24px 20px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+        }
+
+        .result.france { border-top: 3px solid var(--green); }
+        .result.comparison { border-top: 3px solid var(--coral); }
+        .country-name { margin: 0; font-size: 15px; font-weight: 700; }
+        .intensity {
+            margin: 18px 0 2px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 38px;
+            line-height: 1.1;
+        }
+
+        .intensity-unit, .result-caption { color: var(--muted); font-size: 12px; }
+        .result-caption { margin: 22px 0 7px; }
+        .equivalent { margin: 0; font-size: 21px; font-weight: 700; }
+        .result.comparison .equivalent { color: var(--coral); }
+        .result.france .equivalent { color: var(--green); }
+
+        .summary {
+            margin-top: 14px;
+            padding: 17px 20px;
+            border-left: 3px solid #d5a34c;
+            background: #fff9ec;
+            color: #4f4a3c;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .footnote { margin: 14px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+        [hidden] { display: none !important; }
+
+        @keyframes arrive {
+            from { opacity: 0; transform: translateY(9px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 760px) {
+            main { padding-top: 44px; }
+            .controls { grid-template-columns: 1fr 1fr; }
+            .controls button { grid-column: 1 / -1; }
+        }
+
+        @media (max-width: 520px) {
+            .topbar { padding: 0 20px; }
+            .source-label { font-size: 10px; }
+            main { width: min(100% - 32px, 960px); padding-top: 36px; }
+            .intro { margin-bottom: 26px; font-size: 15px; }
+            .controls, .results { grid-template-columns: 1fr; }
+            .controls { padding: 16px; }
+            .controls button { grid-column: auto; }
+            .result { padding: 19px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">↯</span> Comparateur carbone</div>
+        <div class="source-label">DONNÉES ÉLECTRIQUES EN TEMPS RÉEL</div>
+    </header>
+    <main>
+        <p class="eyebrow">Électricité et climat</p>
+        <h1>Un gramme de CO₂, deux réalités électriques.</h1>
+        <p class="intro">Comparez la quantité d’électricité qui produirait la même masse de CO₂ en France et dans un autre pays, selon l’intensité carbone actuelle de leur électricité.</p>
+
+        <form id="comparison-form" novalidate>
+            <div class="controls">
+                <div>
+                    <label for="base-country">Pays de base</label>
+                    <select id="base-country">
+                        <option value="DE">Allemagne</option>
+                        <option value="BE">Belgique</option>
+                        <option value="CH">Suisse</option>
+                        <option value="ES">Espagne</option>
+                        <option value="IT">Italie</option>
+                        <option value="GB">Royaume-Uni</option>
+                        <option value="NL">Pays-Bas</option>
+                        <option value="PT">Portugal</option>
+                        <option value="PL">Pologne</option>
+                        <option value="SE">Suède</option>
+                        <option value="NO">Norvège</option>
+                        <option value="DK">Danemark</option>
+                        <option value="FI">Finlande</option>
+                        <option value="IE">Irlande</option>
+                        <option value="US">États-Unis</option>
+                        <option value="CA">Canada</option>
+                        <option value="JP">Japon</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="amount">Quantité de CO₂</label>
+                    <div class="amount-wrap"><input id="amount" type="number" min="0.001" step="any" value="1" required><span class="unit">g</span></div>
+                </div>
+                <div>
+                    <label for="country">Pays à comparer</label>
+                    <select id="country">
+                        <option value="DE">Allemagne</option>
+                        <option value="BE">Belgique</option>
+                        <option value="CH">Suisse</option>
+                        <option value="ES">Espagne</option>
+                        <option value="IT">Italie</option>
+                        <option value="GB">Royaume-Uni</option>
+                        <option value="NL">Pays-Bas</option>
+                        <option value="PT">Portugal</option>
+                        <option value="PL">Pologne</option>
+                        <option value="SE">Suède</option>
+                        <option value="NO">Norvège</option>
+                        <option value="DK">Danemark</option>
+                        <option value="FI">Finlande</option>
+                        <option value="IE">Irlande</option>
+                        <option value="US">États-Unis</option>
+                        <option value="CA">Canada</option>
+                        <option value="JP">Japon</option>
+                    </select>
+                </div>
+                <button id="compare" type="submit">Comparer</button>
+            </div>
+        </form>
+
+        <p id="status" role="status" aria-live="polite">Saisissez votre clé API pour afficher la comparaison.</p>
+        <section id="results" class="results" aria-label="Résultats de la comparaison" hidden>
+            <article class="result france">
+                <p class="country-name">France</p>
+                <p class="intensity" id="fr-intensity">—</p>
+                <span class="intensity-unit">gCO₂e par kWh</span>
+                <p class="result-caption">Pour émettre la quantité saisie, il faut produire environ</p>
+                <p class="equivalent" id="fr-energy">—</p>
+            </article>
+            <article class="result comparison">
+                <p class="country-name" id="other-name">Pays choisi</p>
+                <p class="intensity" id="other-intensity">—</p>
+                <span class="intensity-unit">gCO₂e par kWh</span>
+                <p class="result-caption">Pour émettre la quantité saisie, il faut produire environ</p>
+                <p class="equivalent" id="other-energy">—</p>
+            </article>
+        </section>
+        <p id="summary" class="summary" hidden></p>
+        <p id="updated" class="footnote" hidden></p>
+        <p class="footnote">Intensité carbone du réseau électrique, fournie par Electricity Maps. L’équivalence est une estimation : quantité de CO₂ ÷ intensité carbone. Elle ne représente pas l’empreinte complète d’un usage ou d’un appareil.</p>
+    </main>
+</body>
+<script>
+    const form = document.querySelector("#comparison-form");
+    const amountInput = document.querySelector("#amount");
+    const countrySelect = document.querySelector("#country");
+    const apiKeyInput = document.querySelector("#api-key");
+    const status = document.querySelector("#status");
+    const results = document.querySelector("#results");
+    const summary = document.querySelector("#summary");
+    const updated = document.querySelector("#updated");
+    const compareButton = document.querySelector("#compare");
+
+    const formatNumber = (value, maximumFractionDigits = 1) => new Intl.NumberFormat("fr-FR", {
+        maximumFractionDigits,
+        minimumFractionDigits: 0
+    }).format(value);
+
+    function formatEnergy(kilowattHours) {
+        if (!Number.isFinite(kilowattHours)) return "Indisponible";
+        if (kilowattHours < 0.001) return `${formatNumber(kilowattHours * 1_000_000, 2)} mWh`;
+        if (kilowattHours < 1) return `${formatNumber(kilowattHours * 1_000, 2)} Wh`;
+        return `${formatNumber(kilowattHours, 4)} kWh`;
+    }
+
+    async function getCarbonIntensity(zone, apiKey) {
+        const url = new URL("https://api.electricitymaps.com/v3/carbon-intensity/latest");
+        url.searchParams.set("zone", zone);
+        const response = await fetch(url, { headers: { "auth-token": apiKey } });
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                throw new Error("Clé API invalide ou accès non autorisé. Vérifiez votre accès Electricity Maps.");
+            }
+            if (response.status === 404) throw new Error("Aucune donnée disponible pour ce pays.");
+            throw new Error(`L’API Electricity Maps a répondu avec le statut ${response.status}.`);
+        }
+        const data = await response.json();
+        if (typeof data.carbonIntensity !== "number" || data.carbonIntensity <= 0) {
+            throw new Error("L’intensité carbone est absente ou vaut zéro pour l’un des pays.");
+        }
+        return data;
+    }
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const amount = Number(amountInput.value);
+        const apiKey = 'em_GyMdAXdnB4gpeYeJzCvu7rXXPHqQyzK7';
+        if (!Number.isFinite(amount) || amount <= 0) {
+            status.textContent = "Entrez une quantité supérieure à zéro.";
+            status.classList.add("error");
+            amountInput.focus();
+            return;
+        }
+
+        status.textContent = "Récupération des intensités carbone…";
+        status.classList.remove("error");
+        results.hidden = true;
+        summary.hidden = true;
+        updated.hidden = true;
+        compareButton.disabled = true;
+
+        try {
+            const baseCountry = document.querySelector("#base-country").selectedOptions[0].textContent;
+            const country = countrySelect.selectedOptions[0].textContent;
+            const [base, comparison] = await Promise.all([
+                getCarbonIntensity(baseCountry, apiKey),
+                getCarbonIntensity(countrySelect.value, apiKey)
+            ]);
+            const baseEnergy = amount / base.carbonIntensity;
+            const comparisonEnergy = amount / comparison.carbonIntensity;
+            const energyRatio = comparisonEnergy / baseEnergy;
+
+            document.querySelector("#fr-intensity").textContent = formatNumber(base.carbonIntensity);
+            document.querySelector("#other-name").textContent = country;
+            document.querySelector("#other-intensity").textContent = formatNumber(comparison.carbonIntensity);
+            document.querySelector("#fr-energy").textContent = formatEnergy(baseEnergy);
+            document.querySelector("#other-energy").textContent = formatEnergy(comparisonEnergy);
+
+            const difference = Math.abs(energyRatio - 1);
+            const comparisonText = energyRatio > 1
+                ? `En ${country}, il faut environ ${formatNumber(difference * 100, 0)} % d’électricité en plus qu’en ${baseCountry} pour émettre cette même quantité de CO₂.`
+                : `En ${country}, il faut environ ${formatNumber(difference * 100, 0)} % d’électricité en moins qu’en ${baseCountry} pour émettre cette même quantité de CO₂.`;
+            summary.textContent = energyRatio === 1
+                ? "Les deux pays ont une intensité carbone très proche : la même quantité d’électricité produit environ la même quantité de CO₂."
+                : comparisonText;
+            const timestamps = [base.datetime, comparison.datetime].filter(Boolean);
+            updated.textContent = timestamps.length
+                ? `Données les plus récentes disponibles. Horodatages : ${timestamps.join(" / ")}.`
+                : "Données les plus récentes disponibles auprès de l’API.";
+            results.hidden = false;
+            summary.hidden = false;
+            updated.hidden = false;
+            status.textContent = `Comparaison pour ${formatNumber(amount, 3)} g de CO₂e.`;
+        } catch (error) {
+            status.textContent = error instanceof TypeError
+                ? "Impossible de joindre l’API. Vérifiez votre connexion et ouvrez cette page depuis un serveur local (pas directement en file://)."
+                : error.message;
+            status.classList.add("error");
+        } finally {
+            compareButton.disabled = false;
+        }
+    });
+</script>
+</html>
