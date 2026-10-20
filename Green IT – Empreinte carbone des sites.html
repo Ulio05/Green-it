@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Green IT – Empreinte carbone des sites</title>
+<style>
+:root{--bg:#f6f8f5;--card:#fff;--tx:#1b2a1f;--mut:#5d6b61;--bd:#dbe3dc;--ac:#2e7d4f;--ac2:#e0efe5;--bar:#2e7d4f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111a14;--card:#1a251d;--tx:#e6efe8;--mut:#9bb0a0;--bd:#2c3b30;--ac:#5fc88a;--ac2:#23382a;--bar:#5fc88a}}
+:root[data-theme="dark"]{--bg:#111a14;--card:#1a251d;--tx:#e6efe8;--mut:#9bb0a0;--bd:#2c3b30;--ac:#5fc88a;--ac2:#23382a;--bar:#5fc88a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 20px;font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+.ctrl{display:flex;flex-wrap:wrap;gap:16px;align-items:end}
+label{display:block;font-size:.78rem;color:var(--mut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.tabs{display:flex;gap:4px;background:var(--ac2);padding:4px;border-radius:10px}
+.tabs button{border:0;background:none;color:var(--tx);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+.tabs button.on{background:var(--ac);color:#fff}
+select{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);min-width:240px;max-width:100%}
+.chk{display:flex;gap:6px;align-items:center;font-size:.9rem;color:var(--tx);text-transform:none;letter-spacing:0;margin:0;padding-bottom:8px}
+.kpi{font-size:2rem;font-weight:700;color:var(--ac);line-height:1.1}
+.kpi small{font-size:1rem;font-weight:500;color:var(--mut)}
+.row{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:12px 0}
+.track{background:var(--ac2);border-radius:6px;height:30px;position:relative;overflow:hidden}
+.bar{height:100%;background:var(--bar);border-radius:6px;transition:width .4s}
+.val{position:absolute;left:8px;top:0;line-height:30px;font-size:.85rem;font-weight:600;color:var(--tx);text-shadow:0 0 3px var(--card),0 0 3px var(--card)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.cur{background:var(--ac2);font-weight:600}
+.note{font-size:.8rem;color:var(--mut);margin:8px 0 0}
+</style>
+</head>
+<body>
+<main>
+<h1>🌱 Empreinte carbone des sites web</h1>
+<p class="sub">Booking, Airbnb, Amazon, Cdiscount, SNCF – consommation cumulée par période, selon la métaphore de votre choix.</p>
+
+<div class="card ctrl">
+  <div><label>Période</label><div class="tabs" id="tabs"></div></div>
+  <div><label for="met">Métaphore / unité</label><select id="met"></select></div>
+  <label class="chk"><input type="checkbox" id="log"> Échelle logarithmique</label>
+</div>
+
+<div class="card">
+  <div class="kpi" id="kpi"></div>
+  <div id="bars"></div>
+  <p class="note" id="eq"></p>
+</div>
+
+<div class="card tw">
+  <label>Toutes les périodes (unité sélectionnée)</label>
+  <table id="tbl"></table>
+</div>
+
+<p class="note">Données : tableur « Green IT » (moyenne des 3 essais en gCO₂ par visite × nombre de visites). La semaine est calculée à 7 × le trafic journalier. Hypothèses des métaphores : Paris–Bordeaux ≈ 580 km (train 1,5 kg, voiture 120 kg, avion 130 kg), mix électrique français ≈ 52 gCO₂/kWh, vélo ≈ 5 gCO₂/km.</p>
+</main>
+<script>
+// Données issues du CSV : visites en millions, gCO2 par visite (3 essais)
+var SITES=[
+{n:"Booking",g:[7.06,7.00,7.16],v:{d:19,w:19*7,m:575,y:5700}},
+{n:"Airbnb",g:[12.25,10.59,13.61],v:{d:.49,w:.49*7,m:15.41,y:184.92}},
+{n:"Amazon",g:[6.19,6.06,6.64],v:{d:636,w:636*7,m:19080,y:228960}},
+{n:"Cdiscount",g:[4.63,4.3,4.56],v:{d:.9,w:.9*7,m:28.57,y:342.84}},
+{n:"SNCF",g:[4.39,4.61,4.62],v:{d:.63,w:.63*7,m:19.71,y:236.52}}];
+var PER=[["d","Jour"],["w","Semaine"],["m","Mois"],["y","Année"]];
+var KM=580;
+// per = grammes de CO2 par unité de métaphore (null = gCO2 auto)
+var MET=[
+{id:"g",l:"g CO₂ (auto g / kg / t)",per:null},
+{id:"kwh",l:"kWh d’électricité (mix FR)",per:52,u:"kWh"},
+{id:"goo",l:"Recherches Google",per:.2,u:"recherches"},
+{id:"ia",l:"Requêtes IA (≈ 3,5 g)",per:3.5,u:"requêtes IA"},
+{id:"eau",l:"Bouilloires d’eau portée à ébullition",per:4,u:"ébullitions"},
+{id:"res",l:"Heures de respiration humaine",per:33.33,u:"h de respiration"},
+{id:"velo",l:"Km à vélo",per:5,u:"km à vélo"},
+{id:"train",l:"Km en train",per:1500/KM,u:"km en train"},
+{id:"vo",l:"Km en voiture",per:120000/KM,u:"km en voiture"},
+{id:"av",l:"Km en avion",per:130000/KM,u:"km en avion"},
+{id:"pb",l:"Trajets Paris–Bordeaux en avion",per:130000,u:"trajets"},
+{id:"sh",l:"Vêtements Shein commandés",per:12050,u:"vêtements"}];
+var st={p:"d",m:"g",log:false};
+function avg(a){return a.reduce(function(s,x){return s+x},0)/a.length}
+function grams(s,p){return avg(s.g)*s.v[p]*1e6}
+function num(n){
+  if(n>=1e6)return new Intl.NumberFormat("fr-FR",{notation:"compact",maximumFractionDigits:2}).format(n);
+  return n.toLocaleString("fr-FR",{maximumFractionDigits:n<10?2:n<1000?1:0});
+}
+function fmt(g){
+  var m=MET.filter(function(x){return x.id===st.m})[0];
+  if(m.per)return num(g/m.per)+" "+m.u;
+  if(g>=1e6)return num(g/1e6)+" t CO₂";
+  if(g>=1e3)return num(g/1e3)+" kg CO₂";
+  return num(g)+" g CO₂";
+}
+function render(){
+  var rows=SITES.map(function(s){return{n:s.n,g:grams(s,st.p)}}).sort(function(a,b){return b.g-a.g});
+  var tot=rows.reduce(function(s,r){return s+r.g},0);
+  var max=rows[0].g,lmax=Math.log10(max),lmin=Math.log10(rows[rows.length-1].g);
+  var lab=PER.filter(function(x){return x[0]===st.p})[0][1].toLowerCase();
+  document.getElementById("kpi").innerHTML=fmt(tot)+" <small>au total par "+lab+"</small>";
+  document.getElementById("bars").innerHTML=rows.map(function(r){
+    var w=st.log?((Math.log10(r.g)-lmin+.3)/(lmax-lmin+.3))*100:r.g/max*100;
+    return '<div class="row"><b>'+r.n+'</b><div class="track"><div class="bar" style="width:'+Math.max(w,1.5)+'%"></div><span class="val">'+fmt(r.g)+'</span></div></div>';
+  }).join("");
+  document.getElementById("eq").textContent="Soit "+num(tot/(130000))+" trajets Paris–Bordeaux en avion pour l’ensemble des sites sur la période.";
+  var h="<tr><th>Site</th>"+PER.map(function(p){return'<th>'+p[1]+'</th>'}).join("")+"</tr>";
+  SITES.forEach(function(s){h+="<tr><td>"+s.n+"</td>"+PER.map(function(p){return'<td'+(p[0]===st.p?' class="cur"':'')+'>'+fmt(grams(s,p[0]))+'</td>'}).join("")+"</tr>"});
+  h+="<tr><td><b>Total</b></td>"+PER.map(function(p){var t=SITES.reduce(function(a,s){return a+grams(s,p[0])},0);return'<td'+(p[0]===st.p?' class="cur"':'')+'><b>'+fmt(t)+'</b></td>'}).join("")+"</tr>";
+  document.getElementById("tbl").innerHTML=h;
+  [].forEach.call(document.querySelectorAll("#tabs button"),function(b){b.className=b.dataset.p===st.p?"on":""});
+}
+var tabs=document.getElementById("tabs");
+PER.forEach(function(p){var b=document.createElement("button");b.textContent=p[1];b.dataset.p=p[0];b.onclick=function(){st.p=p[0];render()};tabs.appendChild(b)});
+var sel=document.getElementById("met");
+MET.forEach(function(m){var o=document.createElement("option");o.value=m.id;o.textContent=m.l;sel.appendChild(o)});
+sel.onchange=function(){st.m=sel.value;render()};
+document.getElementById("log").onchange=function(e){st.log=e.target.checked;render()};
+render();
+</script>
+</body>
+</html>
